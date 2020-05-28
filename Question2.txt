@@ -1,0 +1,11 @@
+Question 2.1 The value under 'rows' column in the output of EXPLAIN query and SELECT query after it are same. What does it mean?
+
+1. Rows column in the output of EXPLAIN tells the number of rows that were examined to produce the output.
+2. SELECT count(*) gives us the count of all the rows of the comments table.  
+3. Since both gives us the same output, it means that MySQL examined all the rows to produce the output, therefore it may not be the optimal query.
+
+
+Question 2.2 Is the SELECT query optimal? If no, how do we optimize it?
+
+No this query is not the optimal query. As per the output of the explain query, key column is null. This means that user_id is not indexed, 
+therefore we can optimize the query by adding the indexing to user_id column.

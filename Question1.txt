@@ -1,0 +1,81 @@
+1. What do different columns in the output of EXPLAIN mean? What possible values can those have? What is the meaning of those values?
+
+different columns of EXPLAIN:
+1. id --> identifier for each SELECT within the query
+
+2. select_type --> the type of SELECT query. 
+    Possible values with meaning are:
+    1. SIMPLE -> the query is a simple SELECT query without any subqueries or UNION.
+    2. PRIMARY -> the SELECT is in the outermost query in a JOIN
+    3. DERIVED – the SELECT is part of a subquery within a FROM clause
+    4. SUBQUERY – the first SELECT in a subquery
+    5. DEPENDENT SUBQUERY – a subquery which is dependent upon on outer query
+    6. UNCACHEABLE SUBQUERY – a subquery which is not cacheable
+    7. UNION – the SELECT is the second or later statement of a UNION
+    8. UNION RESULT – the SELECT is a result of a UNION
+    9. DEPENDENT UNION – the second or later SELECT of a UNION is dependent on an outer query
+
+3. table --> The table to which the row of output refers.
+
+4. type --> how MySQL joins the tables used. Possible values are:
+   1. SYSTEM – the table has only zero or one row
+   2. CONST – the table has only one matching row which is indexed. This is the fastest type of join because the table only has to be read once and the column’s value can be treated as a constant when joining other tables.
+   3. EQ_REF – all parts of an index are used by the join and the index is PRIMARY KEY or UNIQUE NOT NULL. This is the next best possible join type.
+   4. REF - all of the matching rows of an indexed column are read for each combination of rows from the previous table. This type of join appears for indexed columns compared using = or <=> operators.
+   5. REF_OR_NULL – same as ref but also contains rows with a null value for the column.
+   6. FULLTEXT – the join uses the table’s FULLTEXT index.
+   7. INDEX – the entire index tree is scanned to find matching rows.
+   8. INDEX_MERGE – the join uses a list of indexes to produce the result set. The key column of EXPLAIN‘s output will contain the keys used.
+   9. UNIQUE_SUBQUERY – an IN subquery returns only one result from the table and makes use of the primary key.
+   10.INDEX_SUBQUERY – the same as unique_subquery but returns more than one result row.
+   11. RANGE – an index is used to find matching rows in a specific range, typically when the key column is compared to a constant using operators like BETWEEN, IN, >, >=, etc.
+   12. ALL – the entire table is scanned to find matching rows for the join. This is the worst join type and usually indicates the lack of appropriate indexes on the table.
+
+5. possible_keys --> keys that can be used by MySQL to find rows from the table
+
+6. key --> the actual key used by MYSQL to find the rows from the table
+
+7. key_len --> the length of index the Query Optimizer chose to use.
+
+8. ref --> the columns or constants that are compared to the index named in the key column. 
+
+9. rows --> the number of records that were examined to produce the output
+
+10. filtered --> The filtered column indicates an estimated percentage of table rows that will be filtered by the table condition.
+
+11. Extra --> This column contains additional information on how MySQL will resolve the query. Possible values:
+   1. Using Where -- WHERE clause will be used to restrict which rows will be matched against the next table.
+   2. Using temporary -- MySQL will need to create a temporary table to hold the result to solve this query.
+   3. Using index -- The column information is retrieved from the table using only information in the index tree
+   4. Using index condition -- Tables are read by accessing index tuples and testing them first to determine whether to read full table rows
+   5. Using index for group-by -- Similar to the Using index table access method, Using index for group-by indicates that MySQL found an index that can be used to retrieve all columns of a GROUP BY or DISTINCT query     without any extra disk access to the actual table. Additionally, the index is used in the most efficient way so that for each group, only a few index entries are read.
+   6. Using index for skip scan -- Indicates that the Skip Scan access method is used
+   7. Using filesort -- MySQL will need to do an extra pass to find out how to retrieve the rows in sorted order.
+   8. Distinct -- MySQL will not continue searching for more rows for the current row combination after it has found the first matching row.
+   9. Not exists -- MySQL was able to do a LEFT JOIN optimisation on the query and will not examine more rows in this table for the previous row combination after it finds one row that matches the LEFT JOIN criteria.
+   10. Zero limit -- The query had a LIMIT 0 clause and cannot select any rows. 
+   11. Using sort_union(...), Using union(...), Using intersect(...) -- These indicate the particular algorithm showing how index scans are merged for the index_merge join type.
+   12. Using MRR -- Tables are read using the Multi-Range Read optimization strategy.
+   13. Using join buffer (Block Nested Loop), Using join buffer (Batched Key Access) -- Tables from earlier joins are read in portions into the join buffer, and then their rows are used from the buffer to perform the join with the current table.
+   14. Unique row not found --F or a query such as SELECT ... FROM tbl_name, no rows satisfy the condition for a UNIQUE index or PRIMARY KEY on the table. 
+   15. Start temporary, End temporary -- This indicates temporary table use for the semijoin Duplicate Weedout strategy. 
+   16. Skip_open_table, Open_frm_only, Open_full_table -- These values indicate file-opening optimizations that apply to queries for INFORMATION_SCHEMA tables. 
+   17. Select tables optimized away -- The optimizer determined 1) that at most one row should be returned, and 2) that to produce this row, a deterministic set of rows must be read. When the rows to be read can be read during the optimization phase (for example, by reading index rows), there is no need to read any tables during query execution. 
+   18. Scanned N databases -- This indicates how many directory scans the server performs when processing a query for INFORMATION_SCHEMA tables
+   19. Rematerialize (X,...) -- is displayed in the EXPLAIN row for table T, where X is any lateral derived table whose rematerialization is triggered when a new row of T is read. 
+   20. Recursive -- This indicates that the row applies to the recursive SELECT part of a recursive common table expression.
+   21 Range checked for each record -- MySQL found no good index to use, but found that some of indexes might be used after column values from preceding tables are known. For each row combination in the preceding tables, MySQL checks whether it is possible to use a range or index_merge access method to retrieve rows. This is not very fast, but is faster than performing a join with no index at all.
+   22. Plan isn't ready yet -- This value occurs with EXPLAIN FOR CONNECTION when the optimizer has not finished creating the execution plan for the statement executing in the named connection. If execution plan output comprises multiple lines, any or all of them could have this Extra value, depending on the progress of the optimizer in determining the full execution plan. 
+   23 No tables used -- The query has no FROM clause, or has a FROM DUAL clause. 
+   24.No matching rows after partition pruning -- For DELETE or UPDATE, the optimizer found nothing to delete or update after partition pruning
+   25.No matching row in const table -- For a query with a join, there was an empty table or a table with no rows satisfying a unique index condition. 
+   26.No matching min/max row -- No row satisfies the condition for a query such as SELECT MIN(...) FROM ... WHERE condition. 
+   27.LooseScan(m..n) --  The semijoin LooseScan strategy is used. m and n are key part numbers. 
+   28. Impossible WHERE noticed after reading const tables -- MySQL has read all const (and system) tables and notice that the WHERE clause is always false. 
+   29.Impossible WHERE -- The WHERE clause is always false and cannot select any rows. 
+   30. Impossible HAVING -- The HAVING clause is always false and cannot select any rows. 
+   31. Full scan on NULL key -- This occurs for subquery optimization as a fallback strategy when the optimizer cannot use an index-lookup access method. 
+   32.FirstMatch(tbl_name) --  The semijoin FirstMatch join shortcutting strategy is used for tbl_name. 
+   33. const row not found -- For a query such as SELECT ... FROM tbl_name, the table was empty. 
+   34. Deleting all rows -- For DELETE, some storage engines (such as MyISAM) support a handler method that removes all table rows in a simple and fast way. This Extra value is displayed if the engine uses this optimization. 
+   

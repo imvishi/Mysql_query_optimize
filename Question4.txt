@@ -1,0 +1,128 @@
+Question 4.1 EXPLAIN a SELECT query against one of your databases which employs an INNER JOIN between two tables. What does the output look like? What does the values under different columns mean? Do you get only one row in EXPLAIN's output?
+
+Suppose I have two tables in my databases
+1. users
+2. articles
+
++----+--------+
+| id | name   |
++----+--------+
+|  1 | user1  |
+|  2 | user2  |
+|  3 | user3  |
++----+--------+
+
+
++----+---------+----------+
+| id | user_id | article  |
++----+---------+----------+
+|  1 |       1 | article1 |
+|  2 |       1 | article2 |
+|  3 |       1 | article3 |
+|  4 |       2 | article4 |
+|  5 |       2 | article5 |
+|  6 |       3 | article6 |
++----+---------+----------+
+
+
+Explain query output
+
+EXPLAIN DISTINCT name from users INNER JOIN articles on users.id = articles.user_id;
+
+
++----+-------------+----------+------------+------+---------------+---------+---------+----------------------+------+----------+-----------------------+
+| id | select_type | table    | partitions | type | possible_keys | key     | key_len | ref                  | rows | filtered | Extra                 |
++----+-------------+----------+------------+------+---------------+---------+---------+----------------------+------+----------+-----------------------+
+|  1 | SIMPLE      | users    | NULL       | ALL  | PRIMARY       | NULL    | NULL    | NULL                 |    3 |   100.00 | Using temporary       |
+|  1 | SIMPLE      | articles | NULL       | ref  | user_id       | user_id | 5       | test_schema.users.id |    2 |   100.00 | Using index; Distinct |
++----+-------------+----------+------------+------+---------------+---------+---------+----------------------+------+----------+-----------------------+
+
+
+Values under different columns
+1. id -- the id for each select query
+
+2.select_type -- the select type for both tables(users and articles) is simple without any subqueries or UNION.
+
+3. table -- the name of the tables used by select queries (users and articles).
+
+4.partitions --listing the partitions from which records would be matched by the query.
+
+5. type -- the join type of the expression. 
+   1. ALL in case of users means there is a sequential scan of the entire tables.
+   2. ref in case of articles means all of the matching rows of an indexed column are read for each combination of rows from the previous table.
+6. possible_keys -- keys that can be used by MySQL to find rows from the table (PRIMARY KEY for users table and user_id for articles).
+
+7. key-- the actual key used by MySql to find rows. 
+   1. users table: In case of users table this value is null means that MySql not using any index to find rows.
+   2. articles table: user_id is used to find rows.
+
+8. key_len -- the length of index the Query Optimizer chose to use.
+   1. In case of users table  value is Null because MySql is not using any key.
+   2. In case of articles table value is 5 the length of user_id key.
+
+9. ref -- the columns or constants that are compared to the index named in the key column. 
+   1. users table: this value is also null.
+   2. articles table: the if from users table is used to compare with the user_id key.
+   
+10. rows -- the total rows scanned by MySql database. (3 in case of users and 2 in case of articles).
+
+11. filtered -- The filtered column indicates an estimated percentage of table rows that will be filtered by the table condition.
+
+12. Extra -- This column contains additional information on how MySQL will resolve the query.
+    1. users table is using a temporary table to hold the result to solve this query
+    2. articles is using index table and join buffer means users table is now is join buffer and then their rows are used from the buffer to perform the join.
+
+    
+    
+    
+ --------------------------------------------------------------------------------------------------------------------------------------------------------------------------   
+Question 4.2 From the same select query in above question using a subquery instead of a JOIN. What does the EXPLAIN output look like now? Which query is better and why?
+
+
+Query: EXPLAIN SELECT name FROM users WHERE id IN (SELECT user_id FROM articles);
+
++----+-------------+----------+------------+-------+---------------+---------+---------+------+------+----------+----------------------------------------------------+
+| id | select_type | table    | partitions | type  | possible_keys | key     | key_len | ref  | rows | filtered | Extra                                              |
++----+-------------+----------+------------+-------+---------------+---------+---------+------+------+----------+----------------------------------------------------+
+|  1 | SIMPLE      | articles | NULL       | index | user_id       | user_id | 5       | NULL |    6 |    50.00 | Using index; LooseScan                             |
+|  1 | SIMPLE      | users    | NULL       | ALL   | PRIMARY       | NULL    | NULL    | NULL |    3 |    50.00 | Using where; Using join buffer (Block Nested Loop) |
++----+-------------+----------+------------+-------+---------------+---------+---------+------+------+----------+----------------------------------------------------+
+
+
+Values under different columns
+1. id -- the id for each select query
+
+2.select_type -- the select type for both tables(users and articles) is simple without any subqueries or UNION.
+
+3. table -- the name of the tables used by select queries (users and articles).
+
+4.partitions --listing the partitions from which records would be matched by the query.
+
+5. type -- the join type of the expression. 
+   1. ALL in case of users means there is a sequential scan of the entire tables.
+   2. INDEX  in case of articles the entire index tree is scanned to find matching rows.
+6. possible_keys -- keys that can be used by MySQL to find rows from the table (PRIMARY KEY for users table and user_id for articles).
+
+7. key-- the actual key used by MySql to find rows. 
+   1. users table: In case of users table this value is null means that MySql not using any index to find rows.
+   2. articles table: user_id is used to find rows.
+
+8. key_len -- the length of index the Query Optimizer chose to use.
+   1. In case of users table  value is Null because MySql is not using any key.
+   2. In case of articles table value is 5 the length of user_id key.
+
+9. ref -- the columns or constants that are compared to the index named in the key column. In our case this value is NULL for both tables
+   
+10. rows -- the total rows scanned by MySql database. (3 in case of users and 6 in case of articles).
+
+11. filtered -- The filtered column indicates an estimated percentage of table rows that will be filtered by the table condition.
+
+12. Extra -- This column contains additional information on how MySQL will resolve the query.
+    1. users table is using a where condition to restrict which rows will be matched against the next table and join buffer means article table is now is join buffer and then their rows are used from the buffer to perform the join.
+    2. articles is using index table and The semijoin LooseScan strategy is used.
+    
+    
+    
+After analysing the subquery and join EXPLAIN plan, it seems that join query is better than subqueries, because  rows column shows that subqueries scanned the complete user and article table while join only scanned the half of the rows.
+    
+    
