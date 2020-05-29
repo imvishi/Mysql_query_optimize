@@ -27,7 +27,7 @@ Suppose I have two tables in my databases
 
 Explain query output
 
-EXPLAIN DISTINCT name from users INNER JOIN articles on users.id = articles.user_id;
+EXPLAIN SELECT DISTINCT name from users INNER JOIN articles on users.id = articles.user_id;
 
 
 +----+-------------+----------+------------+------+---------------+---------+---------+----------------------+------+----------+-----------------------+
