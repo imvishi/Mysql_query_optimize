@@ -1,10 +1,14 @@
 Question 3.1 We decide to index columns in comments table to optimize the SELECT query. What column(s) will you index in which order?
 
 Answer: 
-To optimize the SELECT query, we use multiple-column indexing and index three columns in following order (commentable_id, commentable_type, user_id).
+To optimize the SELECT query, we use multiple-column indexing and index three columns based on selectivity. 
+Since the selectivity of the user_id > commentable_id  > commentable_type. Therfore we index three columns in the following order (user_id, commentable_id, commentable_type).
+
 If the table has a multiple-column index, any leftmost prefix of the index can be used by the optimizer to look up rows. 
 For example, if you have a three-column index on (col1, col2, col3), you have indexed search capabilities on (col1), (col1, col2), and (col1, col2, col3).
 MySQL cannot use the index to perform lookups if the columns do not form a leftmost prefix of the index.(see: https://dev.mysql.com/doc/refman/5.7/en/multiple-column-indexes.html)
 
-Therfore, to optimize the query (SELECT * FROM comments WHERE commentable_id = 1 AND commentable_type = 'Article' AND user_id = 1), 
-we need to index all three columns in following order (commentable_id, commentable_type, user_id).
+Therfore, to optimize the query, we need to do following task:
+1. index all three columns in following order (user_id, commentable_id, commentable_type)
+2. Update query so that columns form a leftmost prefix of the index e.g:
+SELECT * FROM comments WHERE user_id = 1 AND commentable_id = 1 AND commentable_type = 'Article'
